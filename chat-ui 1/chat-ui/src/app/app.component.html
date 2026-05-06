@@ -1,0 +1,337 @@
+<div class="flex h-screen overflow-hidden bg-gray-50">
+  
+  <!-- Mobile Overlay -->
+  @if (isSidebarOpen) {
+    <div 
+      class="fixed inset-0 bg-black/50 z-20 lg:hidden"
+      (click)="closeSidebar()">
+    </div>
+  }
+
+  <!-- Sidebar -->
+  <aside 
+    class="fixed lg:relative inset-y-0 left-0 z-30 w-72 bg-sidebar-purple transform transition-transform duration-300 ease-in-out flex flex-col"
+    [class.translate-x-0]="isSidebarOpen"
+    [class.-translate-x-full]="!isSidebarOpen"
+    [class.lg:translate-x-0]="true">
+    
+    <!-- Sidebar Header -->
+    <div class="p-4 border-b border-white/10">
+      <button 
+        (click)="createNewChat()"
+        class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-200 font-medium">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        New Chat
+      </button>
+    </div>
+
+    <!-- Chat History -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
+      <h3 class="text-white/50 text-xs font-semibold uppercase tracking-wider px-3 py-2">
+        Chat History
+      </h3>
+      
+      @for (chat of chats; track chat.id) {
+        <div 
+          (click)="selectChat(chat.id)"
+          class="group flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition-all duration-200"
+          [class.bg-sidebar-hover]="chat.id === currentChatId"
+          [class.hover:bg-sidebar-dark]="chat.id !== currentChatId">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white/60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          
+          <span class="flex-1 text-white/90 text-sm truncate">
+            {{ chat.title }}
+          </span>
+          
+          <button 
+            (click)="deleteChat($event, chat.id)"
+            class="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white/60 hover:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      }
+
+      @if (chats.length === 0) {
+        <div class="text-white/40 text-sm text-center py-8">
+          No chat history yet
+        </div>
+      }
+    </div>
+  </aside>
+
+  <!-- Main Chat Area -->
+  <main class="flex-1 flex flex-col min-w-0">
+    
+    <!-- Header -->
+    <header class="flex items-center gap-4 px-4 py-3 bg-white border-b border-gray-200">
+      <button 
+        (click)="toggleSidebar()"
+        class="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-gray-900 font-semibold">Generative API Workbench</h1>
+          <p class="text-gray-500 text-xs">Always here to help</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Chat Messages -->
+    <div 
+      #chatContainer
+      class="flex-1 overflow-y-auto chat-scrollbar">
+      
+      <div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        
+        @if (messages.length === 0) {
+          <!-- Empty State -->
+          <div class="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-2">How can I help you today?</h2>
+            <p class="text-gray-500 max-w-md">
+              Start a conversation by typing a message below. I'm here to assist with any questions you might have.
+            </p>
+            
+            <!-- Suggestion Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8 w-full max-w-xl">
+              <button 
+                (click)="messageText = 'Show me top 10 clients by exposure'; sendMessage()"
+                class="p-4 text-left bg-white border border-gray-200 rounded-xl hover:border-purple-300 hover:shadow-md transition-all duration-200">
+                <div class="text-gray-800 font-medium mb-1">Top Clients</div>
+                <div class="text-gray-500 text-sm">Show top 10 clients by exposure</div>
+              </button>
+              <button 
+                (click)="messageText = 'List all active deals with their values'; sendMessage()"
+                class="p-4 text-left bg-white border border-gray-200 rounded-xl hover:border-purple-300 hover:shadow-md transition-all duration-200">
+                <div class="text-gray-800 font-medium mb-1">Active Deals</div>
+                <div class="text-gray-500 text-sm">List all active deals</div>
+              </button>
+              <button 
+                (click)="messageText = 'Show compliance exposures by client'; sendMessage()"
+                class="p-4 text-left bg-white border border-gray-200 rounded-xl hover:border-purple-300 hover:shadow-md transition-all duration-200">
+                <div class="text-gray-800 font-medium mb-1">Compliance Report</div>
+                <div class="text-gray-500 text-sm">Compliance exposures by client</div>
+              </button>
+              <button 
+                (click)="messageText = 'What is the total pipeline value across all clients?'; sendMessage()"
+                class="p-4 text-left bg-white border border-gray-200 rounded-xl hover:border-purple-300 hover:shadow-md transition-all duration-200">
+                <div class="text-gray-800 font-medium mb-1">Pipeline Analysis</div>
+                <div class="text-gray-500 text-sm">Total pipeline value summary</div>
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- Messages -->
+        @for (message of messages; track message.id) {
+          <div 
+            class="flex gap-4"
+            [class.justify-end]="message.role === 'user'">
+            
+            @if (message.role === 'assistant') {
+              <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white animate-bulb" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+            }
+            
+            <div 
+              class="max-w-[90%] sm:max-w-[85%]"
+              [class.order-first]="message.role === 'user'"
+              [class.max-w-[80%]]="message.role === 'user'"
+              [class.sm:max-w-[70%]]="message.role === 'user'">
+              
+              <!-- User Message -->
+              @if (message.role === 'user') {
+                <div class="px-4 py-3 rounded-2xl bg-purple-600 text-white">
+                  <p class="text-sm sm:text-base leading-relaxed whitespace-pre-wrap">{{ message.content }}</p>
+                </div>
+              }
+
+              <!-- Assistant Message -->
+              @if (message.role === 'assistant') {
+                <div 
+                  class="px-4 py-3 rounded-2xl bg-white text-gray-800 border border-gray-200 shadow-sm"
+                  [class.border-red-200]="message.isError"
+                  [class.bg-red-50]="message.isError">
+                  
+                  <!-- Text Content with Markdown-like formatting -->
+                  <div class="text-sm sm:text-base leading-relaxed whitespace-pre-wrap message-content" [innerHTML]="formatMessageContent(message.content)"></div>
+                  
+                  <!-- Bar Chart Visualization -->
+                  @if (message.chartType === 'bar' && message.data && message.data.length > 0) {
+                    <div class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Chart View
+                      </h4>
+                      <div class="space-y-2">
+                        @for (item of getChartData(message); track item.label) {
+                          <div class="flex items-center gap-3">
+                            <div class="w-24 text-xs text-gray-600 truncate" [title]="item.label">
+                              {{ item.label }}
+                            </div>
+                            <div class="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                class="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all duration-500"
+                                [style.width.%]="item.percentage">
+                              </div>
+                            </div>
+                            <div class="w-20 text-xs font-medium text-gray-700 text-right">
+                              {{ formatCellValue(item.value) }}
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Data Table -->
+                  @if (message.data && message.data.length > 0) {
+                    <div class="mt-4 overflow-x-auto">
+                      <div class="inline-block min-w-full align-middle">
+                        <div class="overflow-hidden border border-gray-200 rounded-xl">
+                          <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                              <tr>
+                                @for (col of getDisplayColumns(message); track col) {
+                                  <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+                                    {{ formatColumnName(col) }}
+                                  </th>
+                                }
+                              </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                              @for (row of message.data.slice(0, 10); track $index) {
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                  @for (col of getDisplayColumns(message); track col) {
+                                    <td class="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                                      {{ formatCellValue(row[col]) }}
+                                    </td>
+                                  }
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </div>
+                        @if (message.data.length > 10) {
+                          <p class="text-xs text-gray-500 mt-2 text-center">
+                            Showing 10 of {{ message.data.length }} results
+                          </p>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Execution Trace (collapsible) -->
+                  @if (message.trace) {
+                    <details class="mt-4 text-xs">
+                      <summary class="cursor-pointer text-gray-500 hover:text-gray-700 font-medium">
+                        View execution details
+                      </summary>
+                      <div class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div class="space-y-1 text-gray-600">
+                          <p><span class="font-medium">Execution time:</span> {{ message.trace.execution_time_ms }}ms</p>
+                          <p><span class="font-medium">API calls:</span> {{ message.trace.api_calls?.length || 0 }}</p>
+                          @for (call of message.trace.api_calls; track $index) {
+                            <p class="pl-2 text-gray-500">- {{ call.tool }}: {{ call.rows }} rows</p>
+                          }
+                        </div>
+                      </div>
+                    </details>
+                  }
+                </div>
+              }
+              
+              <div 
+                class="mt-1 text-xs text-gray-400"
+                [class.text-right]="message.role === 'user'">
+                {{ formatTime(message.timestamp) }}
+              </div>
+            </div>
+
+            @if (message.role === 'user') {
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center flex-shrink-0 text-white text-sm font-semibold">
+                U
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Loading Indicator -->
+        @if (isLoading) {
+          <div class="flex gap-4">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white animate-flicker" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            
+            <div class="max-w-[80%] sm:max-w-[70%]">
+              <div class="px-4 py-4 bg-white border border-gray-200 rounded-2xl shadow-sm">
+                <div class="flex items-center gap-1">
+                  <div class="w-2 h-2 bg-purple-500 rounded-full typing-dot"></div>
+                  <div class="w-2 h-2 bg-purple-500 rounded-full typing-dot"></div>
+                  <div class="w-2 h-2 bg-purple-500 rounded-full typing-dot"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="border-t border-gray-200 bg-white p-4">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex items-end gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-100 transition-all duration-200">
+          <textarea
+            #messageInput
+            [(ngModel)]="messageText"
+            (keydown)="onKeyDown($event)"
+            placeholder="Type your message..."
+            rows="1"
+            class="flex-1 bg-transparent border-none outline-none resize-none text-gray-800 placeholder-gray-400 text-sm sm:text-base max-h-32"
+            [disabled]="isLoading">
+          </textarea>
+          
+          <button
+            (click)="sendMessage()"
+            [disabled]="!messageText.trim() || isLoading"
+            class="p-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </button>
+        </div>
+        
+        <p class="text-center text-xs text-gray-400 mt-3">
+          AI Assistant can make mistakes. Consider checking important information.
+        </p>
+      </div>
+    </div>
+  </main>
+</div>
