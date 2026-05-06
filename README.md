@@ -20,6 +20,14 @@
 
 ---
 
+## 📸 Screenshots
+
+![Workbench Interface](Screenshots/image.png)
+![Execution Plan](Screenshots/image%20(1).png)
+![Data Visualization](Screenshots/image%20(2).png)
+
+---
+
 ## 🏗️ Architecture
 
 The system operates across three distinct layers:
